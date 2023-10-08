@@ -24,7 +24,7 @@ To run this calendar app locally, follow these steps:
 
 1. Clone this repository to your local machine.
 
-git clone https://github.com/your-username/modern-calendar-app.git
+git clone https://github.com/jinosabu1999/modern-calendar-app.git
 
 2. Open the `index.html` file in your web browser.
 
