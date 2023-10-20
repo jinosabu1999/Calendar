@@ -16,7 +16,6 @@ The Modern Calendar App is a web-based calendar application that allows users to
 - HTML5
 - CSS3
 - JavaScript
-- SVG for navigation buttons
 
 ## Getting Started
 
