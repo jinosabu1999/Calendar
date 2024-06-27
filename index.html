@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar App</title>
+    <title>Futuristic Calendar App</title>
     <style>
         :root {
             --primary-color: #3498db;
             --secondary-color: #2ecc71;
             --background-color: #1a1a2e;
             --text-color: #ffffff;
+            --danger-color: #e74c3c;
         }
 
         * {
@@ -163,6 +164,31 @@
             margin-bottom: 5px;
         }
 
+        .event-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .event-actions button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .edit-btn {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: var(--text-color);
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -184,7 +210,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Calendar</h1>
+        <h1>Futuristic Calendar</h1>
         <div class="calendar">
             <div class="calendar-header">
                 <button id="prev-month">&lt;</button>
@@ -205,11 +231,11 @@
             </div>
         </div>
         <div class="event-form">
-            <h3>Add Event</h3>
+            <h3 id="form-title">Add Event</h3>
             <input type="text" id="event-title" placeholder="Event Title">
             <input type="date" id="event-date">
             <textarea id="event-description" placeholder="Event Description"></textarea>
-            <button id="add-event">Add Event</button>
+            <button id="save-event">Save Event</button>
         </div>
         <div class="events-list" id="events-list"></div>
     </div>
@@ -220,13 +246,15 @@
                 this.currentDate = new Date();
                 this.events = {};
                 this.selectedDate = null;
+                this.editingEventId = null;
 
                 this.monthElement = document.getElementById('current-month');
                 this.daysContainer = document.getElementById('days-container');
                 this.prevMonthBtn = document.getElementById('prev-month');
                 this.nextMonthBtn = document.getElementById('next-month');
-                this.addEventBtn = document.getElementById('add-event');
+                this.saveEventBtn = document.getElementById('save-event');
                 this.eventsList = document.getElementById('events-list');
+                this.formTitle = document.getElementById('form-title');
 
                 this.initEventListeners();
                 this.renderCalendar();
@@ -235,7 +263,7 @@
             initEventListeners() {
                 this.prevMonthBtn.addEventListener('click', () => this.changeMonth(-1));
                 this.nextMonthBtn.addEventListener('click', () => this.changeMonth(1));
-                this.addEventBtn.addEventListener('click', () => this.addEvent());
+                this.saveEventBtn.addEventListener('click', () => this.saveEvent());
                 this.daysContainer.addEventListener('click', (e) => this.selectDate(e));
             }
 
@@ -256,7 +284,7 @@
 
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayElement = this.createDayElement(day);
-                    const dateString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                    const dateString = this.formatDate(new Date(year, month, day));
 
                     if (this.events[dateString]) {
                         dayElement.classList.add('active');
@@ -292,11 +320,12 @@
             selectDate(e) {
                 if (e.target.classList.contains('day') && e.target.textContent) {
                     this.selectedDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), parseInt(e.target.textContent));
-                    document.getElementById('event-date').valueAsDate = this.selectedDate;
+                    document.getElementById('event-date').value = this.formatDate(this.selectedDate);
+                    this.renderEvents();
                 }
             }
 
-            addEvent() {
+            saveEvent() {
                 const title = document.getElementById('event-title').value;
                 const date = document.getElementById('event-date').value;
                 const description = document.getElementById('event-description').value;
@@ -305,7 +334,19 @@
                     if (!this.events[date]) {
                         this.events[date] = [];
                     }
-                    this.events[date].push({ title, description });
+
+                    if (this.editingEventId !== null) {
+                        // Update existing event
+                        const eventIndex = this.events[date].findIndex(e => e.id === this.editingEventId);
+                        if (eventIndex !== -1) {
+                            this.events[date][eventIndex] = { id: this.editingEventId, title, description };
+                        }
+                    } else {
+                        // Add new event
+                        const newId = Date.now(); // Simple way to generate unique IDs
+                        this.events[date].push({ id: newId, title, description });
+                    }
+
                     this.renderCalendar();
                     this.clearEventForm();
                 }
@@ -315,25 +356,62 @@
                 document.getElementById('event-title').value = '';
                 document.getElementById('event-date').value = '';
                 document.getElementById('event-description').value = '';
+                this.editingEventId = null;
+                this.formTitle.textContent = 'Add Event';
+                this.saveEventBtn.textContent = 'Save Event';
             }
 
             renderEvents() {
                 this.eventsList.innerHTML = '';
-                const sortedDates = Object.keys(this.events).sort((a, b) => new Date(a) - new Date(b));
+                if (this.selectedDate) {
+                    const dateString = this.formatDate(this.selectedDate);
+                    const events = this.events[dateString] || [];
 
-                sortedDates.forEach(date => {
-                    const dateEvents = this.events[date];
-                    dateEvents.forEach(event => {
+                    events.forEach(event => {
                         const eventElement = document.createElement('div');
                         eventElement.classList.add('event-item');
                         eventElement.innerHTML = `
                             <h4>${event.title}</h4>
-                            <p>${new Date(date).toDateString()}</p>
+                            <p>${this.selectedDate.toDateString()}</p>
                             <p>${event.description}</p>
+                            <div class="event-actions">
+                                <button class="edit-btn" data-id="${event.id}">Edit</button>
+                                <button class="delete-btn" data-id="${event.id}">Delete</button>
+                            </div>
                         `;
                         this.eventsList.appendChild(eventElement);
                     });
-                });
+
+                    // Add event listeners for edit and delete buttons
+                    this.eventsList.querySelectorAll('.edit-btn').forEach(btn => {
+                        btn.addEventListener('click', () => this.editEvent(dateString, parseInt(btn.dataset.id)));
+                    });
+                    this.eventsList.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', () => this.deleteEvent(dateString, parseInt(btn.dataset.id)));
+                    });
+                }
+            }
+
+            editEvent(date, id) {
+                const event = this.events[date].find(e => e.id === id);
+                if (event) {
+                    document.getElementById('event-title').value = event.title;
+                    document.getElementById('event-date').value = date;
+                    document.getElementById('event-description').value = event.description;
+                    this.editingEventId = id;
+                    this.formTitle.textContent = 'Edit Event';
+                    this.saveEventBtn.textContent = 'Update Event';
+                }
+            }
+
+            deleteEvent(date, id) {
+                this.events[date] = this.events[date].filter(e => e.id !== id);
+                this.renderCalendar();
+                this.renderEvents();
+            }
+
+            formatDate(date) {
+                return date.toISOString().split('T')[0];
             }
         }
 
