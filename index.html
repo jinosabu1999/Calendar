@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futuristic Calendar App</title>
+    <title>Calendar</title>
     <style>
         :root {
             --primary-color: #3498db;
@@ -210,7 +210,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Futuristic Calendar</h1>
+        <h1>Calendar</h1>
         <div class="calendar">
             <div class="calendar-header">
                 <button id="prev-month">&lt;</button>
@@ -244,7 +244,7 @@
         class Calendar {
             constructor() {
                 this.currentDate = new Date();
-                this.events = {};
+                this.events = this.loadEvents();
                 this.selectedDate = null;
                 this.editingEventId = null;
 
@@ -347,6 +347,7 @@
                         this.events[date].push({ id: newId, title, description });
                     }
 
+                    this.saveEvents();
                     this.renderCalendar();
                     this.clearEventForm();
                 }
@@ -406,12 +407,25 @@
 
             deleteEvent(date, id) {
                 this.events[date] = this.events[date].filter(e => e.id !== id);
+                if (this.events[date].length === 0) {
+                    delete this.events[date];
+                }
+                this.saveEvents();
                 this.renderCalendar();
                 this.renderEvents();
             }
 
             formatDate(date) {
                 return date.toISOString().split('T')[0];
+            }
+
+            loadEvents() {
+                const events = localStorage.getItem('events');
+                return events ? JSON.parse(events) : {};
+            }
+
+            saveEvents() {
+                localStorage.setItem('events', JSON.stringify(this.events));
             }
         }
 
