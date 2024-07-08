@@ -16,25 +16,23 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
             background-color: var(--background-color);
             color: var(--text-color);
         }
         .container {
             display: flex;
-            gap: 20px;
+            flex-direction: column;
             max-width: 1200px;
-            width: 95%;
+            margin: 0 auto;
+            padding: 20px;
         }
         .calendar {
-            flex: 1;
             background-color: var(--surface-color);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            margin-bottom: 20px;
         }
         .calendar header {
             display: flex;
@@ -65,7 +63,7 @@
             border-spacing: 5px;
         }
         .calendar th, .calendar td {
-            padding: 15px;
+            padding: 15px 10px;
             text-align: center;
             border-radius: 10px;
         }
@@ -91,7 +89,6 @@
             color: var(--text-color);
         }
         .event-section {
-            flex: 1;
             background-color: var(--surface-color);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -103,12 +100,16 @@
             margin-top: 0;
             color: var(--primary-color);
         }
+        .event-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
         .event-section input {
-            width: 100%;
+            flex-grow: 1;
             padding: 12px;
             border: none;
             border-radius: 8px;
-            margin-bottom: 15px;
             background-color: rgba(255, 255, 255, 0.1);
             color: var(--text-color);
             font-size: 16px;
@@ -122,6 +123,7 @@
             color: var(--text-color);
             font-size: 16px;
             transition: background-color 0.3s ease;
+            white-space: nowrap;
         }
         .event-section button:hover {
             background-color: #2a76ef;
@@ -130,8 +132,9 @@
             margin-top: 20px;
             flex-grow: 1;
             overflow-y: auto;
+            max-height: 300px;
         }
-        .event-list div {
+        .event-item {
             background-color: rgba(255, 255, 255, 0.1);
             padding: 15px;
             margin-bottom: 10px;
@@ -139,8 +142,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            word-break: break-word;
         }
-        .event-list div button {
+        .event-item .event-text {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .event-item .event-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .event-item button {
             background-color: transparent;
             border: none;
             padding: 5px 10px;
@@ -150,18 +162,48 @@
             font-size: 14px;
             transition: color 0.3s ease;
         }
-        .event-list div button.edit-btn {
+        .event-item button.edit-btn {
             color: var(--primary-color);
         }
-        .event-list div button.delete-btn {
+        .event-item button.delete-btn {
             color: var(--secondary-color);
         }
-        .event-list div button:hover {
+        .event-item button:hover {
             opacity: 0.8;
         }
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
+            .calendar th, .calendar td {
+                padding: 10px 5px;
+                font-size: 14px;
+            }
+            .calendar header h1 {
+                font-size: 20px;
+            }
+            .event-section h2 {
+                font-size: 20px;
+            }
+            .event-section input, .event-section button {
+                font-size: 14px;
+                padding: 10px;
+            }
+            .event-list {
+                max-height: 200px;
+            }
+        }
+        @media (max-width: 480px) {
+            .calendar th, .calendar td {
+                padding: 8px 3px;
+                font-size: 12px;
+            }
+            .calendar header h1 {
+                font-size: 18px;
+            }
+            .event-section h2 {
+                font-size: 18px;
+            }
+            .event-section input, .event-section button {
+                font-size: 12px;
+                padding: 8px;
             }
         }
     </style>
@@ -192,8 +234,10 @@
 
         <div class="event-section">
             <h2 id="eventDate">Select a date</h2>
-            <input type="text" id="eventInput" placeholder="Event name" />
-            <button id="addEventButton">Add Event</button>
+            <div class="event-input-container">
+                <input type="text" id="eventInput" placeholder="Event name" />
+                <button id="addEventButton">Add Event</button>
+            </div>
             <div class="event-list" id="eventList"></div>
         </div>
     </div>
@@ -220,7 +264,7 @@
             }
 
             function renderCalendar(month, year) {
-                const firstDay = new Date(year, month).getDay();
+                const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const today = new Date();
                 let date = 1;
@@ -230,13 +274,15 @@
                 for (let i = 0; i < 6; i++) {
                     let row = document.createElement('tr');
                     for (let j = 0; j < 7; j++) {
-                        let cell = document.createElement('td');
                         if (i === 0 && j < firstDay) {
+                            let cell = document.createElement('td');
                             let cellText = document.createTextNode('');
                             cell.appendChild(cellText);
+                            row.appendChild(cell);
                         } else if (date > daysInMonth) {
                             break;
                         } else {
+                            let cell = document.createElement('td');
                             let cellText = document.createTextNode(date);
                             let cellDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
                             if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
@@ -247,9 +293,9 @@
                             }
                             cell.setAttribute('data-date', cellDate);
                             cell.appendChild(cellText);
+                            row.appendChild(cell);
                             date++;
                         }
-                        row.appendChild(cell);
                     }
                     calendarBody.appendChild(row);
                 }
@@ -281,9 +327,10 @@
                 if (events[date]) {
                     events[date].forEach((event, index) => {
                         const eventItem = document.createElement('div');
+                        eventItem.className = 'event-item';
                         eventItem.innerHTML = `
-                            ${event}
-                            <div>
+                            <span class="event-text">${event}</span>
+                            <div class="event-actions">
                                 <button class="edit-btn" onclick="editEvent('${date}', ${index})">Edit</button>
                                 <button class="delete-btn" onclick="deleteEvent('${date}', ${index})">Delete</button>
                             </div>`;
@@ -332,7 +379,7 @@
                 localStorage.setItem('events', JSON.stringify(events));
             }
 
-            document.addEventListener('click', function(event) {
+            calendarBody.addEventListener('click', function(event) {
                 if (event.target.tagName === 'TD' && event.target.getAttribute('data-date')) {
                     openEventSection(event.target.getAttribute('data-date'));
                 }
