@@ -88,6 +88,11 @@
             background-color: var(--secondary-color);
             color: var(--text-color);
         }
+        .calendar .highlight {
+            background-color: #ffd700;
+            color: #000;
+            font-weight: bold;
+        }
         .event-section {
             background-color: var(--surface-color);
             border-radius: 15px;
@@ -171,6 +176,33 @@
         .event-item button:hover {
             opacity: 0.8;
         }
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .search-container input {
+            flex-grow: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+        .search-container button {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .search-container button:hover {
+            background-color: #2a76ef;
+        }
         @media (max-width: 768px) {
             .calendar th, .calendar td {
                 padding: 10px 5px;
@@ -210,6 +242,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search date (DD/MM/YYYY)" />
+            <button id="searchButton">Search</button>
+        </div>
         <div class="calendar">
             <header>
                 <button id="prevMonth">&#10094;</button>
@@ -252,11 +288,14 @@
             const eventInput = document.getElementById('eventInput');
             const addEventButton = document.getElementById('addEventButton');
             const eventList = document.getElementById('eventList');
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
 
             const now = new Date();
             let currentMonth = now.getMonth();
             let currentYear = now.getFullYear();
             let events = JSON.parse(localStorage.getItem('events')) || {};
+            let highlightedDate = null;
 
             function formatDateString(date) {
                 const [year, month, day] = date.split('-');
@@ -290,6 +329,9 @@
                             }
                             if (events[cellDate]) {
                                 cell.classList.add('event');
+                            }
+                            if (highlightedDate === cellDate) {
+                                cell.classList.add('highlight');
                             }
                             cell.setAttribute('data-date', cellDate);
                             cell.appendChild(cellText);
@@ -379,6 +421,22 @@
                 localStorage.setItem('events', JSON.stringify(events));
             }
 
+            function searchDate() {
+                const searchValue = searchInput.value;
+                const [day, month, year] = searchValue.split('/');
+                if (day && month && year)
+{
+                    const searchDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    highlightedDate = searchDate;
+                    currentMonth = parseInt(month) - 1;
+                    currentYear = parseInt(year);
+                    renderCalendar(currentMonth, currentYear);
+                    openEventSection(searchDate);
+                } else {
+                    alert('Please enter a valid date in the format DD/MM/YYYY');
+                }
+            }
+
             calendarBody.addEventListener('click', function(event) {
                 if (event.target.tagName === 'TD' && event.target.getAttribute('data-date')) {
                     openEventSection(event.target.getAttribute('data-date'));
@@ -388,6 +446,7 @@
             prevMonth.addEventListener('click', prevMonthFunc);
             nextMonth.addEventListener('click', nextMonthFunc);
             addEventButton.addEventListener('click', addEvent);
+            searchButton.addEventListener('click', searchDate);
 
             renderCalendar(currentMonth, currentYear);
         });
