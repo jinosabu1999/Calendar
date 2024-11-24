@@ -139,6 +139,10 @@
             overflow-y: auto;
             max-height: 300px;
         }
+        .event-list h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
         .event-item {
             background-color: rgba(255, 255, 255, 0.1);
             padding: 15px;
@@ -150,8 +154,12 @@
             word-break: break-word;
         }
         .event-item .event-text {
-            flex-grow: 1;
-            margin-right: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .event-item .event-text span:first-child {
+            font-size: 0.9em;
+            color: var(--secondary-color);
         }
         .event-item .event-actions {
             display: flex;
@@ -243,7 +251,7 @@
 <body>
     <div class="container">
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search date (DD/MM/YYYY)" />
+            <input type="text" id="searchInput" placeholder="Search date (DD/MM/YYYY) or event" />
             <button id="searchButton">Search</button>
         </div>
         <div class="calendar">
@@ -324,7 +332,8 @@
                             let cell = document.createElement('td');
                             let cellText = document.createTextNode(date);
                             let cellDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
-                            if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                            if (date ===
+today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                                 cell.classList.add('today');
                             }
                             if (events[cellDate]) {
@@ -371,7 +380,9 @@
                         const eventItem = document.createElement('div');
                         eventItem.className = 'event-item';
                         eventItem.innerHTML = `
-                            <span class="event-text">${event}</span>
+                            <div class="event-text">
+                                <span>${event}</span>
+                            </div>
                             <div class="event-actions">
                                 <button class="edit-btn" onclick="editEvent('${date}', ${index})">Edit</button>
                                 <button class="delete-btn" onclick="deleteEvent('${date}', ${index})">Delete</button>
@@ -421,11 +432,13 @@
                 localStorage.setItem('events', JSON.stringify(events));
             }
 
-            function searchDate() {
-                const searchValue = searchInput.value;
-                const [day, month, year] = searchValue.split('/');
-                if (day && month && year)
-{
+            function searchDateAndEvents() {
+                const searchValue = searchInput.value.toLowerCase();
+                const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+                const dateMatch = searchValue.match(dateRegex);
+
+                if (dateMatch) {
+                    const [, day, month, year] = dateMatch;
                     const searchDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                     highlightedDate = searchDate;
                     currentMonth = parseInt(month) - 1;
@@ -433,7 +446,48 @@
                     renderCalendar(currentMonth, currentYear);
                     openEventSection(searchDate);
                 } else {
-                    alert('Please enter a valid date in the format DD/MM/YYYY');
+                    // Search for events
+                    let foundEvents = [];
+                    for (let date in events) {
+                        events[date].forEach((event, index) => {
+                            if (event.toLowerCase().includes(searchValue)) {
+                                foundEvents.push({ date, event, index });
+                            }
+                        });
+                    }
+
+                    if (foundEvents.length > 0) {
+                        displaySearchResults(foundEvents);
+                    } else {
+                        alert('No matching events found.');
+                    }
+                }
+            }
+
+            function displaySearchResults(results) {
+                eventList.innerHTML = '<h3>Search Results:</h3>';
+                results.forEach(({ date, event, index }) => {
+                    const eventItem = document.createElement('div');
+                    eventItem.className = 'event-item';
+                    eventItem.innerHTML = `
+                        <div class="event-text">
+                            <span>${formatDateString(date)}</span>
+                            <span>${event}</span>
+                        </div>
+                        <div class="event-actions">
+                            <button class="edit-btn" onclick="editEvent('${date}', ${index})">Edit</button>
+                            <button class="delete-btn" onclick="deleteEvent('${date}', ${index})">Delete</button>
+                        </div>`;
+                    eventList.appendChild(eventItem);
+                });
+
+                if (results.length > 0) {
+                    const firstResult = results[0];
+                    highlightedDate = firstResult.date;
+                    const [year, month] = firstResult.date.split('-');
+                    currentMonth = parseInt(month) - 1;
+                    currentYear = parseInt(year);
+                    renderCalendar(currentMonth, currentYear);
                 }
             }
 
@@ -446,7 +500,12 @@
             prevMonth.addEventListener('click', prevMonthFunc);
             nextMonth.addEventListener('click', nextMonthFunc);
             addEventButton.addEventListener('click', addEvent);
-            searchButton.addEventListener('click', searchDate);
+            searchButton.addEventListener('click', searchDateAndEvents);
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    searchDateAndEvents();
+                }
+            });
 
             renderCalendar(currentMonth, currentYear);
         });
